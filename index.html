@@ -42,9 +42,9 @@
             background-color: #f4f6f8;
             color: #212529;
         }
-        .wiki-content h1 { font-size: 1.75rem; font-weight: 700; border-bottom: 2px solid #00a495; padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 1rem; color: #1a202c; }
-        .wiki-content h2 { font-size: 1.35rem; font-weight: 700; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.25rem; margin-top: 1.25rem; margin-bottom: 0.75rem; color: #2d3748; }
-        .wiki-content h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem; color: #4a5568; }
+        .wiki-content h2 { font-size: 1.5rem; font-weight: 700; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.25rem; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #1a202c; }
+        .wiki-content h3 { font-size: 1.25rem; font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.5rem; color: #2d3748; padding-left: 0.5rem; border-left: 3px solid #00a495; }
+        .wiki-content h4 { font-size: 1.1rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem; color: #4a5568; padding-left: 1rem; }
         .wiki-content p { margin-bottom: 0.75rem; line-height: 1.7; }
         .wiki-content ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
         .wiki-content blockquote { border-left: 4px solid #00a495; padding-left: 1rem; color: #4a5568; background-color: #f8fafc; padding-top: 0.5rem; padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-style: italic; }
@@ -181,11 +181,12 @@
                     </div>
                 </div>
 
+                <!-- 나무위키 스타일 목차 박스 -->
                 <div id="toc-container" class="hidden mx-4 sm:mx-6 mt-4 p-3 bg-gray-50 border border-gray-200 rounded-md max-w-md">
-                    <div class="font-bold text-xs text-gray-700 uppercase tracking-wider mb-1 flex items-center gap-1">
+                    <div class="font-bold text-xs text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-1">
                         <i data-lucide="list" class="w-3.5 h-3.5 text-namu"></i> 목차
                     </div>
-                    <ul id="toc-list" class="text-xs space-y-1 pl-1 text-gray-600"></ul>
+                    <ul id="toc-list" class="text-xs space-y-1.5 pl-1 text-gray-700"></ul>
                 </div>
 
                 <div id="doc-body" class="p-4 sm:p-6 wiki-content flex-1 text-gray-800 leading-relaxed text-sm sm:text-base"></div>
@@ -212,9 +213,9 @@
                         <button onclick="insertSyntax('~~', '~~')" class="px-2 py-1 bg-white rounded border line-through">S</button>
                         <button onclick="insertSyntax('__', '__')" class="px-2 py-1 bg-white rounded border underline">U</button>
                         <div class="h-4 w-px bg-gray-300 mx-1"></div>
-                        <button onclick="insertSyntax('== ', ' ==')" class="px-2 py-1 bg-white rounded border font-semibold">H1</button>
-                        <button onclick="insertSyntax('=== ', ' ===')" class="px-2 py-1 bg-white rounded border font-semibold">H2</button>
-                        <button onclick="insertSyntax('==== ', ' ====')" class="px-2 py-1 bg-white rounded border font-semibold">H3</button>
+                        <button onclick="insertSyntax('== ', ' ==')" class="px-2 py-1 bg-white rounded border font-semibold">H2</button>
+                        <button onclick="insertSyntax('=== ', ' ===')" class="px-2 py-1 bg-white rounded border font-semibold">H3</button>
+                        <button onclick="insertSyntax('==== ', ' ====')" class="px-2 py-1 bg-white rounded border font-semibold">H4</button>
                         <div class="h-4 w-px bg-gray-300 mx-1"></div>
                         <button onclick="insertSyntax('[[', ']]')" class="px-2 py-1 bg-white rounded border text-namu font-medium">[[링크]]</button>
                         <button onclick="openImageModal()" class="px-2 py-1 bg-white rounded border text-emerald-600 font-bold">📷 사진</button>
@@ -340,7 +341,7 @@
                 author: "관리자",
                 updatedAt: "2026-10-31 10:00:00",
                 views: 1,
-                content: "== 개요 ==\n나무위키에 오신 것을 환영합니다! 🎉\n\n이곳은 누구나 자유롭게 문서를 수정하고 저장할 수 있는 공간입니다.\n\n== 문법 테스트 ==\n* '''굵은 글씨'''\n* ''기울임 글씨''\n* [[수면권장냥|수면권장냥 문서로 이동]]",
+                content: "== 개요 ==\n나무위키에 오신 것을 환영합니다! 🎉\n\n이곳은 누구나 자유롭게 문서를 수정하고 저장할 수 있는 공간입니다.\n\n=== 세부 정보 ===\n* 굵은 글씨는 '''이렇게''' 쓰세요.\n* 기울임은 ''이렇게'' 쓰세요.\n\n== 문법 테스트 ==\n[[수면권장냥|수면권장냥 문서로 이동]]",
                 history: [{ version: 1, author: "관리자", date: "2026-10-31 10:00:00", summary: "초기 생성" }]
             }
         };
@@ -418,7 +419,10 @@
             const tocList = document.getElementById('toc-list');
             if (parsed.toc && parsed.toc.length > 0) {
                 tocContainer.classList.remove('hidden');
-                tocList.innerHTML = parsed.toc.map(item => `<li><a href="#toc-${item.id}" class="text-namu hover:underline"><span class="font-bold">${item.number}.</span> ${item.text}</a></li>`).join('');
+                tocList.innerHTML = parsed.toc.map(item => {
+                    let indentClass = item.level === 2 ? 'pl-4' : (item.level === 3 ? 'pl-8' : '');
+                    return `<li class="${indentClass}"><a href="#toc-${item.id}" class="text-namu hover:underline"><span class="font-bold">${item.number}.</span> ${item.text}</a></li>`;
+                }).join('');
             } else {
                 tocContainer.classList.add('hidden');
             }
@@ -467,7 +471,7 @@
             window.navigateTo("수면 권장냥");
         };
 
-        // 개선된 나무위키 문법 파서 (제목 인식 대폭 강화)
+        // 완벽한 번호 매기기 및 들여쓰기가 적용되는 나무위키 파서
         function parseWikiMarkup(text) {
             if (!text) return { renderedHtml: "", toc: [] };
             let toc = [];
@@ -484,14 +488,12 @@
             for (let rawLine of lines) {
                 let line = rawLine.trim();
 
-                // 수평선 ----
                 if (line === '----') {
                     if (inTable) { parsedLines.push(renderTable(tableRows)); inTable = false; tableRows = []; }
                     parsedLines.push('<hr class="my-4 border-t border-gray-300">');
                     continue;
                 }
 
-                // 표 처리 || 셀 ||
                 if (line.startsWith('||') && line.endsWith('||')) {
                     inTable = true;
                     let cells = line.slice(2, -2).split('||').map(c => c.trim());
@@ -503,7 +505,6 @@
                     tableRows = [];
                 }
 
-                // 제목 파싱 정규식 (공백 유연화)
                 let h4Match = line.match(/^====\s*(.*?)\s*====$/);
                 let h3Match = line.match(/^===\s*(.*?)\s*===$/);
                 let h2Match = line.match(/^==\s*(.*?)\s*==$/);
@@ -515,7 +516,7 @@
                     let id = `heading-${headingCount}`;
                     let numStr = `${h2Count || 1}.${h3Count || 1}.${h4Count}`;
                     toc.push({ id, level: 3, number: numStr, text: titleText });
-                    parsedLines.push(`<h4 id="toc-${id}" class="text-base font-bold mt-3 mb-1 text-gray-700">${numStr}. ${titleText}</h4>`);
+                    parsedLines.push(`<h4 id="toc-${id}">${numStr}. ${titleText}</h4>`);
                     continue;
                 } else if (h3Match) {
                     headingCount++;
@@ -540,7 +541,6 @@
                     continue;
                 }
 
-                // 글머리 기호 *
                 if (line.startsWith('* ')) {
                     parsedLines.push(`<ul><li>${line.substring(2)}</li></ul>`);
                     continue;
@@ -712,7 +712,7 @@
             });
             html += '</div>';
             document.getElementById('special-content').innerHTML = html;
-            document.getElementById('special-section').classList.remove('hidden');
+            document.getElementById('special-section').classList.add('hidden');
         };
 
         function renderRecentSidebar() {
