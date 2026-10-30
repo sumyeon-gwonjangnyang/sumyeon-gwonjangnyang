@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나무위키</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts (Noto Sans KR) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        namu: {
+                            DEFAULT: '#00a495',
+                            dark: '#008577',
+                            light: '#e6f6f4',
+                            accent: '#028a7d',
+                            header: '#00a495',
+                            bg: '#f4f6f8',
+                            card: '#ffffff',
+                            border: '#e2e8f0',
+                            text: '#212529',
+                            muted: '#6c757d'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans KR', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f4f6f8;
+            color: #212529;
+        }
+        .wiki-content h1 { font-size: 1.75rem; font-weight: 700; border-bottom: 2px solid #00a495; padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 1rem; color: #1a202c; }
+        .wiki-content h2 { font-size: 1.35rem; font-weight: 700; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.25rem; margin-top: 1.25rem; margin-bottom: 0.75rem; color: #2d3748; }
+        .wiki-content h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem; color: #4a5568; }
+        .wiki-content p { margin-bottom: 0.75rem; line-height: 1.7; }
+        .wiki-content ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+        .wiki-content blockquote { border-left: 4px solid #00a495; padding-left: 1rem; color: #4a5568; background-color: #f8fafc; padding-top: 0.5rem; padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-style: italic; }
+        .wiki-link { color: #00a495; font-weight: 500; text-decoration: none; cursor: pointer; }
+        .wiki-link:hover { text-decoration: underline; }
+        .wiki-link-new { color: #e53e3e; text-decoration: none; cursor: pointer; }
+        .wiki-link-new:hover { text-decoration: underline; }
+        .wiki-fn-link { color: #00a495; font-size: 0.75em; vertical-align: super; font-weight: bold; margin-left: 2px; }
+        .wiki-table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.9rem; }
+        .wiki-table td, .wiki-table th { border: 1px solid #cbd5e1; padding: 6px 12px; }
+        .wiki-table th { background-color: #f1f5f9; font-weight: bold; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-namu-bg text-namu-text">
+
+    <!-- Header Navigation -->
+    <header class="bg-namu-header text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-3">
+                <button id="toggle-sidebar-btn" class="p-1.5 rounded-lg hover:bg-black/10 md:hidden text-white" title="메뉴 열기">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <a href="#" onclick="navigateTo('수면 권장냥'); return false;" class="flex items-center gap-2 text-xl font-bold tracking-tight hover:opacity-90 transition">
+                    <div class="bg-white text-namu-header rounded px-2 py-0.5 font-extrabold text-lg">N</div>
+                    <span>나무위키</span>
+                </a>
+            </div>
+
+            <!-- Middle: Search Bar -->
+            <div class="relative flex-1 max-w-md mx-2">
+                <div class="relative flex items-center">
+                    <input type="text" id="search-input" placeholder="문서 검색 또는 이동..." 
+                        class="w-full pl-9 pr-8 py-1.5 text-sm rounded-md text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300 shadow-inner"
+                        oninput="handleSearchInput(this.value)"
+                        onkeydown="if(event.key==='Enter') executeSearch()">
+                    <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-2.5"></i>
+                    <button onclick="executeSearch()" class="absolute right-2 text-xs text-gray-500 hover:text-namu-dark font-medium">이동</button>
+                </div>
+                <div id="search-results" class="hidden absolute left-0 right-0 top-full mt-1 bg-white text-gray-800 rounded-md shadow-xl border border-gray-200 z-50 max-h-60 overflow-y-auto"></div>
+            </div>
+
+            <!-- Right Controls -->
+            <div class="flex items-center gap-1 sm:gap-2">
+                <button onclick="goToRandomPage()" class="p-2 hover:bg-black/10 rounded-md text-xs sm:text-sm flex items-center gap-1 transition" title="랜덤 문서">
+                    <i data-lucide="shuffle" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">랜덤</span>
+                </button>
+                <button onclick="showRecentChanges()" class="p-2 hover:bg-black/10 rounded-md text-xs sm:text-sm flex items-center gap-1 transition" title="최근 변경">
+                    <i data-lucide="clock" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">최근 변경</span>
+                </button>
+                
+                <button onclick="openUserModal()" class="flex items-center gap-1.5 bg-namu-dark/40 hover:bg-namu-dark/70 px-2.5 py-1 rounded-md transition text-xs sm:text-sm border border-white/20">
+                    <span id="current-user-avatar" class="text-base">😀</span>
+                    <span id="current-user-name" class="font-medium max-w-[80px] truncate">친구</span>
+                    <i data-lucide="chevron-down" class="w-3 h-3 text-white/70"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container Layout -->
+    <div class="max-w-7xl mx-auto w-full flex-1 flex p-2 sm:p-4 gap-4">
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+        <!-- Sidebar -->
+        <aside id="sidebar" class="fixed md:static inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-200 z-40 w-64 bg-white md:bg-transparent shadow-lg md:shadow-none p-4 md:p-0 flex flex-col gap-4 shrink-0 overflow-y-auto">
+            <div class="bg-white rounded-lg shadow-sm border border-namu-border overflow-hidden">
+                <div class="bg-namu-header text-white px-3 py-2 text-sm font-bold flex items-center gap-1.5">
+                    <i data-lucide="compass" class="w-4 h-4"></i> 주요 기능
+                </div>
+                <div class="p-2 flex flex-col text-sm">
+                    <button onclick="navigateTo('수면 권장냥')" class="p-2 hover:bg-namu-light rounded text-left flex items-center gap-2 text-gray-700 hover:text-namu-dark transition">
+                        <i data-lucide="home" class="w-4 h-4"></i> 나무위키 대문
+                    </button>
+                    <button onclick="openNewPageModal()" class="p-2 hover:bg-namu-light rounded text-left flex items-center gap-2 text-emerald-600 font-medium transition">
+                        <i data-lucide="file-plus" class="w-4 h-4"></i> 새 문서 만들기
+                    </button>
+                    <button onclick="showRecentChanges()" class="p-2 hover:bg-namu-light rounded text-left flex items-center gap-2 text-gray-700 hover:text-namu-dark transition">
+                        <i data-lucide="activity" class="w-4 h-4"></i> 최근 변경 내역
+                    </button>
+                    <button onclick="goToRandomPage()" class="p-2 hover:bg-namu-light rounded text-left flex items-center gap-2 text-gray-700 hover:text-namu-dark transition">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i> 아무 문서나 뽑기
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-namu-border overflow-hidden">
+                <div class="bg-gray-100 border-b border-gray-200 px-3 py-2 text-xs font-bold text-gray-700 flex items-center justify-between">
+                    <span class="flex items-center gap-1.5">
+                        <i data-lucide="clock" class="w-3.5 h-3.5 text-namu"></i> 실시간 최근 변경
+                    </span>
+                    <button onclick="renderRecentSidebar()" class="text-gray-400 hover:text-gray-600" title="새로고침">
+                        <i data-lucide="rotate-cw" class="w-3 h-3"></i>
+                    </button>
+                </div>
+                <div id="sidebar-recent-list" class="divide-y divide-gray-100 text-xs"></div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 min-w-0 flex flex-col gap-4">
+            <!-- View Section -->
+            <div id="view-section" class="bg-white rounded-lg shadow-sm border border-namu-border flex flex-col min-h-[600px]">
+                <div class="border-b border-gray-200 px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50 rounded-t-lg">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 id="doc-title" class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">문서 제목</h1>
+                            <span id="doc-category-badge" class="bg-emerald-100 text-namu-dark text-xs px-2 py-0.5 rounded-full font-medium">일반</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                            <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> <span id="doc-updated">로딩 중...</span></span>
+                            <span>•</span>
+                            <span class="flex items-center gap-1"><i data-lucide="user" class="w-3.5 h-3.5"></i> <span id="doc-author">작성자</span></span>
+                            <span>•</span>
+                            <span class="flex items-center gap-1"><i data-lucide="eye" class="w-3.5 h-3.5"></i> <span id="doc-views">0</span>회 읽음</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1 sm:gap-2">
+                        <button onclick="editCurrentPage()" class="bg-namu text-white hover:bg-namu-dark px-3 py-1.5 rounded text-xs sm:text-sm font-medium flex items-center gap-1 shadow-sm transition">
+                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> 편집
+                        </button>
+                        <button onclick="showHistory()" class="bg-gray-100 text-gray-700 hover:bg-gray-200 px-3 py-1.5 rounded text-xs sm:text-sm font-medium flex items-center gap-1 transition border border-gray-300">
+                            <i data-lucide="history" class="w-3.5 h-3.5"></i> 역사
+                        </button>
+                        <button onclick="openDeleteModal()" class="bg-red-50 text-red-600 hover:bg-red-100 px-2.5 py-1.5 rounded text-xs sm:text-sm font-medium flex items-center gap-1 transition border border-red-200" title="문서 삭제">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="toc-container" class="hidden mx-4 sm:mx-6 mt-4 p-3 bg-gray-50 border border-gray-200 rounded-md max-w-md">
+                    <div class="font-bold text-xs text-gray-700 uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <i data-lucide="list" class="w-3.5 h-3.5 text-namu"></i> 목차
+                    </div>
+                    <ul id="toc-list" class="text-xs space-y-1 pl-1 text-gray-600"></ul>
+                </div>
+
+                <div id="doc-body" class="p-4 sm:p-6 wiki-content flex-1 text-gray-800 leading-relaxed text-sm sm:text-base"></div>
+
+                <div class="border-t border-gray-100 px-6 py-3 bg-gray-50/50 text-xs text-gray-400 flex flex-wrap justify-between items-center rounded-b-lg">
+                    <span>Firebase 클라우드 연동 완료 • 자유롭게 편집이 가능합니다.</span>
+                    <span id="doc-version-tag">r1</span>
+                </div>
+            </div>
+
+            <!-- Editor Section -->
+            <div id="editor-section" class="hidden bg-white rounded-lg shadow-sm border border-namu-border flex-col min-h-[600px]">
+                <div class="border-b border-gray-200 px-4 sm:px-6 py-3 flex items-center justify-between bg-slate-50 rounded-t-lg">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="file-edit" class="w-5 h-5 text-namu"></i>
+                        <h2 class="text-lg font-bold text-gray-800"><span id="editor-page-title-display"></span> 문서 편집</h2>
+                    </div>
+                </div>
+
+                <div class="p-4 sm:p-6 flex flex-col gap-4 flex-1">
+                    <div class="flex flex-wrap items-center gap-1 bg-gray-100 p-1.5 rounded-md border border-gray-200 text-xs text-gray-700">
+                        <button onclick="insertSyntax('\'\'\'', '\'\'\'')" class="px-2 py-1 bg-white rounded border font-bold">B</button>
+                        <button onclick="insertSyntax('\'\'', '\'\'')" class="px-2 py-1 bg-white rounded border italic">I</button>
+                        <button onclick="insertSyntax('~~', '~~')" class="px-2 py-1 bg-white rounded border line-through">S</button>
+                        <button onclick="insertSyntax('__', '__')" class="px-2 py-1 bg-white rounded border underline">U</button>
+                        <div class="h-4 w-px bg-gray-300 mx-1"></div>
+                        <button onclick="insertSyntax('== ', ' ==')" class="px-2 py-1 bg-white rounded border font-semibold">H1</button>
+                        <button onclick="insertSyntax('=== ', ' ===')" class="px-2 py-1 bg-white rounded border font-semibold">H2</button>
+                        <div class="h-4 w-px bg-gray-300 mx-1"></div>
+                        <button onclick="insertSyntax('[[', ']]')" class="px-2 py-1 bg-white rounded border text-namu font-medium">[[링크]]</button>
+                        <button onclick="openImageModal()" class="px-2 py-1 bg-white rounded border text-emerald-600 font-bold">📷 사진</button>
+                        <button onclick="insertSyntax('|| 셀1 || 셀2 ||\n|| 셀3 || 셀4 ||', '')" class="px-2 py-1 bg-white rounded border">표</button>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-bold text-gray-600">카테고리:</label>
+                        <select id="editor-category" class="text-xs bg-gray-50 border border-gray-300 rounded px-2 py-1">
+                            <option value="일반">일반</option>
+                            <option value="규칙">규칙</option>
+                            <option value="인물">인물</option>
+                            <option value="추억">추억</option>
+                            <option value="장소">장소</option>
+                        </select>
+                    </div>
+
+                    <textarea id="editor-content" rows="16" class="w-full p-3 font-mono text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-namu/50 custom-scrollbar" placeholder="여기에 위키 내용을 입력하세요..."></textarea>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">편집 요약:</label>
+                        <input type="text" id="editor-summary" placeholder="수정 내용을 입력하세요..." class="w-full text-xs p-2 border border-gray-300 rounded">
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 pt-2">
+                        <button onclick="cancelEdit()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm rounded">취소</button>
+                        <button onclick="savePage()" class="px-5 py-2 bg-namu hover:bg-namu-dark text-white text-sm rounded shadow-sm">저장하기</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Special Section -->
+            <div id="special-section" class="hidden bg-white rounded-lg shadow-sm border border-namu-border p-4 sm:p-6 min-h-[500px]">
+                <h2 id="special-title" class="text-xl font-bold border-b border-namu pb-2 mb-4 text-gray-800">특수 페이지</h2>
+                <div id="special-content"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="user-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-sm w-full p-5">
+            <h3 class="text-lg font-bold text-gray-800 mb-2">닉네임 변경</h3>
+            <input type="text" id="user-name-input" class="w-full p-2 border rounded text-sm mb-4">
+            <div class="flex justify-end gap-2">
+                <button onclick="closeUserModal()" class="px-3 py-1.5 bg-gray-200 rounded text-xs">취소</button>
+                <button onclick="saveUserProfile()" class="px-4 py-1.5 bg-namu text-white rounded text-xs">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="new-page-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-sm w-full p-5">
+            <h3 class="text-lg font-bold text-gray-800 mb-2">새 문서 만들기</h3>
+            <input type="text" id="new-page-title-input" placeholder="문서 제목..." class="w-full p-2 border rounded text-sm mb-4" onkeydown="if(event.key==='Enter') createNewPageConfirm()">
+            <div class="flex justify-end gap-2">
+                <button onclick="closeNewPageModal()" class="px-3 py-1.5 bg-gray-200 rounded text-xs">취소</button>
+                <button onclick="createNewPageConfirm()" class="px-4 py-1.5 bg-namu text-white rounded text-xs">생성</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="delete-page-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-sm w-full p-5">
+            <h3 class="text-lg font-bold text-red-600 mb-2">문서 삭제</h3>
+            <p class="text-xs text-gray-600 mb-4"><span id="delete-doc-title-display" class="font-bold"></span> 문서를 정말 삭제하시겠습니까?</p>
+            <div class="flex justify-end gap-2">
+                <button onclick="closeDeleteModal()" class="px-3 py-1.5 bg-gray-200 rounded text-xs">취소</button>
+                <button onclick="confirmDeleteCurrentPage()" class="px-4 py-1.5 bg-red-600 text-white rounded text-xs">삭제</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="image-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-5">
+            <h3 class="text-lg font-bold text-gray-800 mb-2">사진 삽입</h3>
+            <input type="file" id="image-file-input" accept="image/*" class="mb-3 text-xs" onchange="handleImageFileUpload(event)">
+            <input type="text" id="image-url-input" placeholder="또는 이미지 URL 입력" class="w-full p-2 border rounded text-xs mb-3">
+            <div class="flex justify-end gap-2">
+                <button onclick="closeImageModal()" class="px-3 py-1.5 bg-gray-200 rounded text-xs">취소</button>
+                <button onclick="insertImageFromModal()" class="px-4 py-1.5 bg-namu text-white rounded text-xs">삽입</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-5 right-5 bg-gray-900 text-white px-4 py-2.5 rounded-lg shadow-xl text-xs sm:text-sm transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <span id="toast-message">알림</span>
+    </div>
+
+    <!-- Firebase SDK Imports (Modular Script) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getFirestore, 
+            collection, 
+            doc, 
+            getDoc, 
+            setDoc, 
+            deleteDoc, 
+            onSnapshot 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // 사용자 제공 Firebase 설정 적용
+        const firebaseConfig = {
+            apiKey: "AIzaSyAVATnM_Zn1tWlDq-oKuaMOJ6o21_zVNeY",
+            authDomain: "sumyeon-gwonjangnyang.firebaseapp.com",
+            projectId: "sumyeon-gwonjangnyang",
+            storageBucket: "sumyeon-gwonjangnyang.firebasestorage.app",
+            messagingSenderId: "405140231078",
+            appId: "1:405140231078:web:b8727f9e564518d9547567",
+            measurementId: "G-FQM97QQB0P"
+        };
+
+        // Firebase 초기화
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const wikiCollection = collection(db, "wiki_pages");
+
+        const USER_KEY = "namu_friend_user_v2";
+
+        const DEFAULT_WIKI_DATA = {
+            "수면 권장냥": {
+                title: "수면 권장냥",
+                category: "일반",
+                author: "관리자",
+                updatedAt: "2026-10-31 10:00:00",
+                views: 1,
+                content: "== 개요 ==\n나무위키에 오신 것을 환영합니다! 🎉\n\n이곳은 누구나 자유롭게 문서를 수정하고 저장할 수 있는 공간입니다.\n\n== 문법 테스트 ==\n* '''굵은 글씨'''\n* ''기울임 글씨''\n* [[수면권장냥|수면권장냥 문서로 이동]]",
+                history: [{ version: 1, author: "관리자", date: "2026-10-31 10:00:00", summary: "초기 생성" }]
+            },
+            "수면권장냥": {
+                title: "수면권장냥",
+                category: "인물",
+                author: "관리자",
+                updatedAt: "2026-10-31 10:05:00",
+                views: 1,
+                content: "== 개요 ==\n수면권장냥 문서입니다.",
+                history: [{ version: 1, author: "관리자", date: "2026-10-31 10:05:00", summary: "초기 생성" }]
+            }
+        };
+
+        let wikiData = {};
+        let currentPage = "수면 권장냥";
+        let currentUser = { name: "친구", avatar: "😀" };
+
+        // Realtime Database Listener (실시간 데이터 동기화)
+        function initFirebaseRealtime() {
+            onSnapshot(wikiCollection, (snapshot) => {
+                let fetchedData = {};
+                snapshot.forEach((docSnapshot) => {
+                    fetchedData[docSnapshot.id] = docSnapshot.data();
+                });
+
+                if (Object.keys(fetchedData).length === 0) {
+                    // 최초 데이터베이스 연결 시 초기 샘플 데이터 세팅
+                    Object.keys(DEFAULT_WIKI_DATA).forEach(async (key) => {
+                        await setDoc(doc(db, "wiki_pages", key), DEFAULT_WIKI_DATA[key]);
+                    });
+                    wikiData = JSON.parse(JSON.stringify(DEFAULT_WIKI_DATA));
+                } else {
+                    wikiData = fetchedData;
+                }
+
+                renderRecentSidebar();
+                if (document.getElementById('view-section').classList.contains('hidden') === false) {
+                    navigateTo(currentPage, false);
+                }
+            });
+        }
+
+        async function savePageToFirebase(pageTitle, pageObj) {
+            try {
+                await setDoc(doc(db, "wiki_pages", pageTitle), pageObj);
+            } catch (e) {
+                console.error("Firestore 저장 오류:", e);
+                showToast("클라우드 저장에 실패했습니다.");
+            }
+        }
+
+        async function deletePageFromFirebase(pageTitle) {
+            try {
+                await deleteDoc(doc(db, "wiki_pages", pageTitle));
+            } catch (e) {
+                console.error("Firestore 삭제 오류:", e);
+            }
+        }
+
+        // Global 함수로 창 등록
+        window.navigateTo = function(pageTitle, updateViews = true) {
+            currentPage = pageTitle;
+            hideAllSections();
+
+            if (!wikiData[pageTitle]) {
+                openEditorForNewPage(pageTitle);
+                return;
+            }
+
+            const docObj = wikiData[pageTitle];
+            if (updateViews) {
+                docObj.views = (docObj.views || 0) + 1;
+                savePageToFirebase(pageTitle, docObj);
+            }
+
+            document.getElementById('doc-title').textContent = docObj.title;
+            document.getElementById('doc-category-badge').textContent = docObj.category || '일반';
+            document.getElementById('doc-updated').textContent = docObj.updatedAt || '';
+            document.getElementById('doc-author').textContent = docObj.author || '익명';
+            document.getElementById('doc-views').textContent = docObj.views || 1;
+            document.getElementById('doc-version-tag').textContent = `r${(docObj.history || []).length || 1}`;
+
+            const parsed = parseWikiMarkup(docObj.content);
+            document.getElementById('doc-body').innerHTML = parsed.renderedHtml;
+
+            const tocContainer = document.getElementById('toc-container');
+            const tocList = document.getElementById('toc-list');
+            if (parsed.toc && parsed.toc.length > 0) {
+                tocContainer.classList.remove('hidden');
+                tocList.innerHTML = parsed.toc.map(item => `<li><a href="#toc-${item.id}" class="text-namu hover:underline">${item.text}</a></li>`).join('');
+            } else {
+                tocContainer.classList.add('hidden');
+            }
+
+            document.getElementById('view-section').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            renderRecentSidebar();
+            if (window.lucide) lucide.createIcons();
+        };
+
+        window.savePage = async function() {
+            const content = document.getElementById('editor-content').value;
+            const category = document.getElementById('editor-category').value;
+            const summary = document.getElementById('editor-summary').value.trim() || '내용 수정';
+
+            if (!content.trim()) {
+                showToast("내용을 입력해주세요.");
+                return;
+            }
+
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+            if (!wikiData[currentPage]) {
+                wikiData[currentPage] = { title: currentPage, category, author: currentUser.name, views: 0, history: [] };
+            }
+
+            const docObj = wikiData[currentPage];
+            docObj.content = content;
+            docObj.category = category;
+            docObj.author = currentUser.name;
+            docObj.updatedAt = dateStr;
+            if (!docObj.history) docObj.history = [];
+            docObj.history.unshift({ version: docObj.history.length + 1, author: currentUser.name, date: dateStr, summary });
+
+            await savePageToFirebase(currentPage, docObj);
+            showToast("클라우드에 안전하게 저장되었습니다!");
+            window.navigateTo(currentPage, false);
+        };
+
+        window.confirmDeleteCurrentPage = async function() {
+            await deletePageFromFirebase(currentPage);
+            delete wikiData[currentPage];
+            closeDeleteModal();
+            showToast(`'${currentPage}' 문서가 삭제되었습니다.`);
+            window.navigateTo("수면 권장냥");
+        };
+
+        function parseWikiMarkup(text) {
+            if (!text) return { renderedHtml: "", toc: [] };
+            let toc = [];
+            let headingCount = 0;
+            let lines = text.split('\n');
+            let parsedLines = [];
+            let inTable = false;
+            let tableRows = [];
+
+            for (let line of lines) {
+                if (line.trim() === '----') {
+                    if (inTable) { parsedLines.push(renderTable(tableRows)); inTable = false; tableRows = []; }
+                    parsedLines.push('<hr class="my-4 border-t border-gray-300">');
+                    continue;
+                }
+                if (line.trim().startsWith('||') && line.trim().endsWith('||')) {
+                    inTable = true;
+                    let cells = line.trim().slice(2, -2).split('||').map(c => c.trim());
+                    tableRows.push(cells);
+                    continue;
+                } else if (inTable) {
+                    parsedLines.push(renderTable(tableRows));
+                    inTable = false;
+                    tableRows = [];
+                }
+
+                let h2Match = line.match(/^==\s*(.*?)\s*==$/);
+                let h3Match = line.match(/^===\s*(.*?)\s*===$/);
+                if (h3Match) {
+                    headingCount++;
+                    let titleText = h3Match[1];
+                    let id = `heading-${headingCount}`;
+                    toc.push({ id, level: 2, text: titleText });
+                    parsedLines.push(`<h3 id="toc-${id}">${titleText}</h3>`);
+                    continue;
+                } else if (h2Match) {
+                    headingCount++;
+                    let titleText = h2Match[1];
+                    let id = `heading-${headingCount}`;
+                    toc.push({ id, level: 1, text: titleText });
+                    parsedLines.push(`<h2 id="toc-${id}">${titleText}</h2>`);
+                    continue;
+                }
+
+                if (line.startsWith('* ')) {
+                    parsedLines.push(`<ul><li>${line.substring(2)}</li></ul>`);
+                    continue;
+                }
+
+                parsedLines.push(line ? `<p>${line}</p>` : '<br>');
+            }
+            if (inTable) parsedLines.push(renderTable(tableRows));
+
+            let html = parsedLines.join('');
+            html = html.replace(/'''(.*?)'''/g, '<strong>$1</strong>');
+            html = html.replace(/''(.*?)''/g, '<em>$1</em>');
+            html = html.replace(/~~(.*?)~~/g, '<del class="text-gray-400">$1</del>');
+            html = html.replace(/__(.*?)__/g, '<u class="underline decoration-namu decoration-2">$1</u>');
+
+            html = html.replace(/\[\[파일:(.*?)(?:\|width=(\d+))?\]\]/g, (m, url, w) => {
+                const style = w ? `style="width: ${w}px;"` : '';
+                return `<img src="${url}" ${style} class="rounded shadow-sm my-2 max-w-full">`;
+            });
+
+            html = html.replace(/\[\[([^\]]+)\]\]/g, (match, p1) => {
+                let target = p1, label = p1;
+                if (p1.includes('|')) {
+                    const parts = p1.split('|');
+                    target = parts[0].trim();
+                    label = parts.slice(1).join('|').trim();
+                }
+                let exists = !!wikiData[target];
+                return exists ? `<span onclick="navigateTo('${target}')" class="wiki-link">${label}</span>` : `<span onclick="navigateTo('${target}')" class="wiki-link-new">${label}<sup>?</sup></span>`;
+            });
+
+            return { renderedHtml: html, toc };
+        }
+
+        function renderTable(rows) {
+            if (!rows || rows.length === 0) return '';
+            let html = '<div class="overflow-x-auto my-3"><table class="wiki-table"><tbody>';
+            rows.forEach((row, rIdx) => {
+                html += '<tr>';
+                row.forEach((cell, cIdx) => {
+                    let text = cell.replace(/'''/g, '');
+                    if (rIdx === 0 || cIdx === 0) {
+                        html += `<th>${text}</th>`;
+                    } else {
+                        html += `<td>${text}</td>`;
+                    }
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table></div>';
+            return html;
+        }
+
+        function hideAllSections() {
+            document.getElementById('view-section').classList.add('hidden');
+            document.getElementById('editor-section').classList.add('hidden');
+            document.getElementById('special-section').classList.add('hidden');
+        }
+
+        window.editCurrentPage = function() {
+            hideAllSections();
+            const docObj = wikiData[currentPage] || { title: currentPage, content: "", category: "일반" };
+            document.getElementById('editor-page-title-display').textContent = currentPage;
+            document.getElementById('editor-category').value = docObj.category || '일반';
+            document.getElementById('editor-content').value = docObj.content || '';
+            document.getElementById('editor-summary').value = '';
+            document.getElementById('editor-section').classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
+        };
+
+        function openEditorForNewPage(pageTitle) {
+            currentPage = pageTitle;
+            hideAllSections();
+            document.getElementById('editor-page-title-display').textContent = pageTitle;
+            document.getElementById('editor-category').value = '일반';
+            document.getElementById('editor-content').value = `== 개요 ==\n${pageTitle} 문서입니다.`;
+            document.getElementById('editor-summary').value = '문서 신규 생성';
+            document.getElementById('editor-section').classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        window.insertSyntax = function(before, after) {
+            const ta = document.getElementById('editor-content');
+            const start = ta.selectionStart, end = ta.selectionEnd;
+            ta.value = ta.value.substring(0, start) + before + ta.value.substring(start, end) + after + ta.value.substring(end);
+            ta.focus();
+        };
+
+        window.cancelEdit = function() {
+            window.navigateTo(wikiData[currentPage] ? currentPage : "수면 권장냥", false);
+        };
+
+        window.openUserModal = function() {
+            document.getElementById('user-name-input').value = currentUser.name;
+            document.getElementById('user-modal').classList.remove('hidden');
+        };
+        window.closeUserModal = function() { document.getElementById('user-modal').classList.add('hidden'); };
+        window.saveUserProfile = function() {
+            const name = document.getElementById('user-name-input').value.trim();
+            if (name) {
+                currentUser.name = name;
+                localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
+                updateUserUI();
+            }
+            closeUserModal();
+        };
+        function updateUserUI() {
+            document.getElementById('current-user-name').textContent = currentUser.name;
+        }
+
+        window.openNewPageModal = function() {
+            document.getElementById('new-page-title-input').value = '';
+            document.getElementById('new-page-modal').classList.remove('hidden');
+        };
+        window.closeNewPageModal = function() { document.getElementById('new-page-modal').classList.add('hidden'); };
+        window.createNewPageConfirm = function() {
+            const title = document.getElementById('new-page-title-input').value.trim();
+            if (title) {
+                closeNewPageModal();
+                window.navigateTo(title);
+            }
+        };
+
+        window.openDeleteModal = function() {
+            document.getElementById('delete-doc-title-display').textContent = currentPage;
+            document.getElementById('delete-page-modal').classList.remove('hidden');
+        };
+        window.closeDeleteModal = function() { document.getElementById('delete-page-modal').classList.add('hidden'); };
+
+        window.openImageModal = function() { document.getElementById('image-modal').classList.remove('hidden'); };
+        window.closeImageModal = function() { document.getElementById('image-modal').classList.add('hidden'); };
+        window.handleImageFileUpload = function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                document.getElementById('image-url-input').value = evt.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+        window.insertImageFromModal = function() {
+            const url = document.getElementById('image-url-input').value.trim();
+            if (url) {
+                insertSyntax(`[[파일:${url}|width=400]]`, '');
+                closeImageModal();
+            }
+        };
+
+        window.showHistory = function() {
+            hideAllSections();
+            const docObj = wikiData[currentPage];
+            document.getElementById('special-title').textContent = `'${currentPage}' 역사`;
+            let html = '<div class="space-y-2">';
+            (docObj?.history || []).forEach(h => {
+                html += `<div class="p-2 border-b text-xs flex justify-between"><span><b>r${h.version}</b> ${h.summary} (${h.author})</span><span>${h.date}</span></div>`;
+            });
+            html += '</div><button onclick="navigateTo(\''+currentPage+'\')" class="mt-4 px-3 py-1 bg-namu text-white text-xs rounded">돌아가기</button>';
+            document.getElementById('special-content').innerHTML = html;
+            document.getElementById('special-section').classList.remove('hidden');
+        };
+
+        window.showRecentChanges = function() {
+            hideAllSections();
+            document.getElementById('special-title').textContent = '최근 변경 내역';
+            let pages = Object.values(wikiData).sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+            let html = '<div class="divide-y">';
+            pages.forEach(p => {
+                html += `<div class="py-2 flex justify-between text-xs cursor-pointer" onclick="navigateTo('${p.title}')"><span class="font-bold text-namu">${p.title}</span><span class="text-gray-400">${p.updatedAt}</span></div>`;
+            });
+            html += '</div>';
+            document.getElementById('special-content').innerHTML = html;
+            document.getElementById('special-section').classList.remove('hidden');
+        };
+
+        function renderRecentSidebar() {
+            const list = document.getElementById('sidebar-recent-list');
+            let pages = Object.values(wikiData).sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 5);
+            list.innerHTML = pages.map(p => `<div class="p-2 hover:bg-gray-50 cursor-pointer truncate" onclick="navigateTo('${p.title}')">${p.title}</div>`).join('');
+        }
+        window.renderRecentSidebar = renderRecentSidebar;
+
+        window.goToRandomPage = function() {
+            const keys = Object.keys(wikiData);
+            if (keys.length > 0) window.navigateTo(keys[Math.floor(Math.random() * keys.length)]);
+        };
+
+        window.handleSearchInput = function(val) {
+            const res = document.getElementById('search-results');
+            const q = val.trim().toLowerCase();
+            if (!q) { res.classList.add('hidden'); return; }
+            let matches = Object.keys(wikiData).filter(k => k.toLowerCase().includes(q));
+            if (matches.length > 0) {
+                res.innerHTML = matches.map(m => `<div class="p-2 hover:bg-namu-light text-xs cursor-pointer" onclick="navigateTo('${m}'); document.getElementById('search-results').classList.add('hidden');">${m}</div>`).join('');
+                res.classList.remove('hidden');
+            } else {
+                res.classList.add('hidden');
+            }
+        };
+        window.executeSearch = function() {
+            const val = document.getElementById('search-input').value.trim();
+            if (val) window.navigateTo(val);
+        };
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+            document.getElementById('sidebar-overlay').classList.toggle('hidden');
+        }
+        document.getElementById('toggle-sidebar-btn').addEventListener('click', toggleSidebar);
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = msg;
+            t.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => t.classList.add('translate-y-20', 'opacity-0'), 2000);
+        }
+
+        // 앱 초기화 및 세션 로딩
+        const savedUser = localStorage.getItem(USER_KEY);
+        if (savedUser) {
+            try { currentUser = JSON.parse(savedUser); } catch(e) {}
+        }
+        updateUserUI();
+        initFirebaseRealtime();
+    </script>
+</body>
+</html>
