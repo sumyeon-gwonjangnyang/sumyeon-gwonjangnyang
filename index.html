@@ -419,9 +419,10 @@
             const tocList = document.getElementById('toc-list');
             if (parsed.toc && parsed.toc.length > 0) {
                 tocContainer.classList.remove('hidden');
+                // 목차 레벨별 확실한 들여쓰기 클래스 적용 (level 2는 pl-4, level 3은 pl-8)
                 tocList.innerHTML = parsed.toc.map(item => {
-                    let indentClass = item.level === 2 ? 'pl-4' : (item.level === 3 ? 'pl-8' : '');
-                    return `<li class="${indentClass}"><a href="#toc-${item.id}" class="text-namu hover:underline"><span class="font-bold">${item.number}.</span> ${item.text}</a></li>`;
+                    let paddingClass = item.level === 2 ? 'pl-4' : (item.level === 3 ? 'pl-8' : '');
+                    return `<li class="${paddingClass}"><a href="#toc-${item.id}" class="text-namu hover:underline"><span class="font-bold">${item.number}.</span> ${item.text}</a></li>`;
                 }).join('');
             } else {
                 tocContainer.classList.add('hidden');
@@ -471,7 +472,6 @@
             window.navigateTo("수면 권장냥");
         };
 
-        // 완벽한 번호 매기기 및 들여쓰기가 적용되는 나무위키 파서
         function parseWikiMarkup(text) {
             if (!text) return { renderedHtml: "", toc: [] };
             let toc = [];
@@ -712,7 +712,7 @@
             });
             html += '</div>';
             document.getElementById('special-content').innerHTML = html;
-            document.getElementById('special-section').classList.add('hidden');
+            document.getElementById('special-section').classList.remove('hidden');
         };
 
         function renderRecentSidebar() {
