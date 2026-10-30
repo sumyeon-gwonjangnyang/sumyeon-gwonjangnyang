@@ -214,6 +214,7 @@
                         <div class="h-4 w-px bg-gray-300 mx-1"></div>
                         <button onclick="insertSyntax('== ', ' ==')" class="px-2 py-1 bg-white rounded border font-semibold">H1</button>
                         <button onclick="insertSyntax('=== ', ' ===')" class="px-2 py-1 bg-white rounded border font-semibold">H2</button>
+                        <button onclick="insertSyntax('==== ', ' ====')" class="px-2 py-1 bg-white rounded border font-semibold">H3</button>
                         <div class="h-4 w-px bg-gray-300 mx-1"></div>
                         <button onclick="insertSyntax('[[', ']]')" class="px-2 py-1 bg-white rounded border text-namu font-medium">[[링크]]</button>
                         <button onclick="openImageModal()" class="px-2 py-1 bg-white rounded border text-emerald-600 font-bold">📷 사진</button>
@@ -316,7 +317,6 @@
             onSnapshot 
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // 사용자 제공 Firebase 설정 적용
         const firebaseConfig = {
             apiKey: "AIzaSyAVATnM_Zn1tWlDq-oKuaMOJ6o21_zVNeY",
             authDomain: "sumyeon-gwonjangnyang.firebaseapp.com",
@@ -327,7 +327,6 @@
             measurementId: "G-FQM97QQB0P"
         };
 
-        // Firebase 초기화
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const wikiCollection = collection(db, "wiki_pages");
@@ -343,15 +342,6 @@
                 views: 1,
                 content: "== 개요 ==\n나무위키에 오신 것을 환영합니다! 🎉\n\n이곳은 누구나 자유롭게 문서를 수정하고 저장할 수 있는 공간입니다.\n\n== 문법 테스트 ==\n* '''굵은 글씨'''\n* ''기울임 글씨''\n* [[수면권장냥|수면권장냥 문서로 이동]]",
                 history: [{ version: 1, author: "관리자", date: "2026-10-31 10:00:00", summary: "초기 생성" }]
-            },
-            "수면권장냥": {
-                title: "수면권장냥",
-                category: "인물",
-                author: "관리자",
-                updatedAt: "2026-10-31 10:05:00",
-                views: 1,
-                content: "== 개요 ==\n수면권장냥 문서입니다.",
-                history: [{ version: 1, author: "관리자", date: "2026-10-31 10:05:00", summary: "초기 생성" }]
             }
         };
 
@@ -359,7 +349,6 @@
         let currentPage = "수면 권장냥";
         let currentUser = { name: "친구", avatar: "😀" };
 
-        // Realtime Database Listener (실시간 데이터 동기화)
         function initFirebaseRealtime() {
             onSnapshot(wikiCollection, (snapshot) => {
                 let fetchedData = {};
@@ -368,7 +357,6 @@
                 });
 
                 if (Object.keys(fetchedData).length === 0) {
-                    // 최초 데이터베이스 연결 시 초기 샘플 데이터 세팅
                     Object.keys(DEFAULT_WIKI_DATA).forEach(async (key) => {
                         await setDoc(doc(db, "wiki_pages", key), DEFAULT_WIKI_DATA[key]);
                     });
@@ -401,7 +389,6 @@
             }
         }
 
-        // Global 함수로 창 등록
         window.navigateTo = function(pageTitle, updateViews = true) {
             currentPage = pageTitle;
             hideAllSections();
@@ -431,7 +418,7 @@
             const tocList = document.getElementById('toc-list');
             if (parsed.toc && parsed.toc.length > 0) {
                 tocContainer.classList.remove('hidden');
-                tocList.innerHTML = parsed.toc.map(item => `<li><a href="#toc-${item.id}" class="text-namu hover:underline">${item.text}</a></li>`).join('');
+                tocList.innerHTML = parsed.toc.map(item => `<li><a href="#toc-${item.id}" class="text-namu hover:underline"><span class="font-bold">${item.number}.</span> ${item.text}</a></li>`).join('');
             } else {
                 tocContainer.classList.add('hidden');
             }
@@ -480,24 +467,34 @@
             window.navigateTo("수면 권장냥");
         };
 
+        // 개선된 나무위키 문법 파서 (제목 인식 대폭 강화)
         function parseWikiMarkup(text) {
             if (!text) return { renderedHtml: "", toc: [] };
             let toc = [];
             let headingCount = 0;
+            let h2Count = 0;
+            let h3Count = 0;
+            let h4Count = 0;
+
             let lines = text.split('\n');
             let parsedLines = [];
             let inTable = false;
             let tableRows = [];
 
-            for (let line of lines) {
-                if (line.trim() === '----') {
+            for (let rawLine of lines) {
+                let line = rawLine.trim();
+
+                // 수평선 ----
+                if (line === '----') {
                     if (inTable) { parsedLines.push(renderTable(tableRows)); inTable = false; tableRows = []; }
                     parsedLines.push('<hr class="my-4 border-t border-gray-300">');
                     continue;
                 }
-                if (line.trim().startsWith('||') && line.trim().endsWith('||')) {
+
+                // 표 처리 || 셀 ||
+                if (line.startsWith('||') && line.endsWith('||')) {
                     inTable = true;
-                    let cells = line.trim().slice(2, -2).split('||').map(c => c.trim());
+                    let cells = line.slice(2, -2).split('||').map(c => c.trim());
                     tableRows.push(cells);
                     continue;
                 } else if (inTable) {
@@ -506,30 +503,50 @@
                     tableRows = [];
                 }
 
-                let h2Match = line.match(/^==\s*(.*?)\s*==$/);
+                // 제목 파싱 정규식 (공백 유연화)
+                let h4Match = line.match(/^====\s*(.*?)\s*====$/);
                 let h3Match = line.match(/^===\s*(.*?)\s*===$/);
-                if (h3Match) {
+                let h2Match = line.match(/^==\s*(.*?)\s*==$/);
+
+                if (h4Match) {
                     headingCount++;
+                    h4Count++;
+                    let titleText = h4Match[1];
+                    let id = `heading-${headingCount}`;
+                    let numStr = `${h2Count || 1}.${h3Count || 1}.${h4Count}`;
+                    toc.push({ id, level: 3, number: numStr, text: titleText });
+                    parsedLines.push(`<h4 id="toc-${id}" class="text-base font-bold mt-3 mb-1 text-gray-700">${numStr}. ${titleText}</h4>`);
+                    continue;
+                } else if (h3Match) {
+                    headingCount++;
+                    h3Count++;
+                    h4Count = 0;
                     let titleText = h3Match[1];
                     let id = `heading-${headingCount}`;
-                    toc.push({ id, level: 2, text: titleText });
-                    parsedLines.push(`<h3 id="toc-${id}">${titleText}</h3>`);
+                    let numStr = h2Count > 0 ? `${h2Count}.${h3Count}` : `${h3Count}`;
+                    toc.push({ id, level: 2, number: numStr, text: titleText });
+                    parsedLines.push(`<h3 id="toc-${id}">${numStr}. ${titleText}</h3>`);
                     continue;
                 } else if (h2Match) {
                     headingCount++;
+                    h2Count++;
+                    h3Count = 0;
+                    h4Count = 0;
                     let titleText = h2Match[1];
                     let id = `heading-${headingCount}`;
-                    toc.push({ id, level: 1, text: titleText });
-                    parsedLines.push(`<h2 id="toc-${id}">${titleText}</h2>`);
+                    let numStr = `${h2Count}`;
+                    toc.push({ id, level: 1, number: numStr, text: titleText });
+                    parsedLines.push(`<h2 id="toc-${id}">${numStr}. ${titleText}</h2>`);
                     continue;
                 }
 
+                // 글머리 기호 *
                 if (line.startsWith('* ')) {
                     parsedLines.push(`<ul><li>${line.substring(2)}</li></ul>`);
                     continue;
                 }
 
-                parsedLines.push(line ? `<p>${line}</p>` : '<br>');
+                parsedLines.push(rawLine ? `<p>${rawLine}</p>` : '<br>');
             }
             if (inTable) parsedLines.push(renderTable(tableRows));
 
@@ -740,7 +757,6 @@
             setTimeout(() => t.classList.add('translate-y-20', 'opacity-0'), 2000);
         }
 
-        // 앱 초기화 및 세션 로딩
         const savedUser = localStorage.getItem(USER_KEY);
         if (savedUser) {
             try { currentUser = JSON.parse(savedUser); } catch(e) {}
