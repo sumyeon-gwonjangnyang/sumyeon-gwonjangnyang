@@ -47,12 +47,35 @@
         .wiki-content h4 { font-size: 1.1rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem; color: #4a5568; padding-left: 1rem; }
         .wiki-content p { margin-bottom: 0.75rem; line-height: 1.7; }
         .wiki-content ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
-        .wiki-content blockquote { border-left: 4px solid #00a495; padding-left: 1rem; color: #4a5568; background-color: #f8fafc; padding-top: 0.5rem; padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-style: italic; }
+        
+        /* 나무위키 스타일 어록/인용구 박스 디자인 */
+        .wiki-content blockquote { 
+            border-left: 4px solid #00a495; 
+            background-color: #eef9f6; 
+            border-top: 1px dashed #cbd5e1;
+            border-right: 1px dashed #cbd5e1;
+            border-bottom: 1px dashed #cbd5e1;
+            padding: 12px 16px; 
+            margin: 0.75rem 0; 
+            color: #212529; 
+            border-top-right-radius: 4px;
+            border-bottom-right-radius: 4px;
+            font-style: normal;
+        }
+        .wiki-content blockquote p {
+            margin-bottom: 0.25rem;
+        }
+        .wiki-content blockquote p:last-child {
+            margin-bottom: 0;
+        }
+
         .wiki-link { color: #00a495; font-weight: 500; text-decoration: none; cursor: pointer; }
         .wiki-link:hover { text-decoration: underline; }
         .wiki-link-new { color: #e53e3e; text-decoration: none; cursor: pointer; }
         .wiki-link-new:hover { text-decoration: underline; }
-        .wiki-fn-link { color: #00a495; font-size: 0.75em; vertical-align: super; font-weight: bold; margin-left: 2px; }
+        .wiki-fn-link { color: #00a495; font-size: 0.75em; vertical-align: super; font-weight: bold; margin-left: 2px; text-decoration: none; }
+        .wiki-fn-link:hover { text-decoration: underline; }
+        .wiki-footnote-box { margin-top: 2rem; border-top: 1px solid #e2e8f0; padding-top: 1rem; font-size: 0.85rem; color: #4a5568; }
         .wiki-table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.9rem; }
         .wiki-table td, .wiki-table th { border: 1px solid #cbd5e1; padding: 6px 12px; }
         .wiki-table th { background-color: #f1f5f9; font-weight: bold; }
@@ -217,6 +240,8 @@
                         <button onclick="insertSyntax('=== ', ' ===')" class="px-2 py-1 bg-white rounded border font-semibold">H3</button>
                         <button onclick="insertSyntax('==== ', ' ====')" class="px-2 py-1 bg-white rounded border font-semibold">H4</button>
                         <div class="h-4 w-px bg-gray-300 mx-1"></div>
+                        <button onclick="insertSyntax('> ', '')" class="px-2 py-1 bg-white rounded border text-namu font-semibold">💬 어록</button>
+                        <button onclick="insertSyntax('[* ', ']')" class="px-2 py-1 bg-white rounded border text-namu font-bold">주석</button>
                         <button onclick="insertSyntax('[[', ']]')" class="px-2 py-1 bg-white rounded border text-namu font-medium">[[링크]]</button>
                         <button onclick="openImageModal()" class="px-2 py-1 bg-white rounded border text-emerald-600 font-bold">📷 사진</button>
                         <button onclick="insertSyntax('|| 셀1 || 셀2 ||\n|| 셀3 || 셀4 ||', '')" class="px-2 py-1 bg-white rounded border">표</button>
@@ -283,7 +308,7 @@
         <div class="bg-white rounded-lg shadow-xl max-w-sm w-full p-5">
             <h3 class="text-lg font-bold text-red-600 mb-2">문서 삭제 보안 인증</h3>
             <p class="text-xs text-gray-600 mb-3"><span id="delete-doc-title-display" class="font-bold"></span> 문서를 삭제하려면 관리자 비밀번호를 입력하세요.</p>
-            <input type="password" id="delete-password-input" placeholder="비밀번호 입력" class="w-full p-2 border rounded text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-red-500" onkeydown="if(event.key==='Enter') confirmDeleteCurrentPage()">
+            <input type="password" id="delete-password-input" placeholder="비밀번호 입력 (180213)" class="w-full p-2 border rounded text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-red-500" onkeydown="if(event.key==='Enter') confirmDeleteCurrentPage()">
             <div class="flex justify-end gap-2">
                 <button onclick="closeDeleteModal()" class="px-3 py-1.5 bg-gray-200 rounded text-xs">취소</button>
                 <button onclick="confirmDeleteCurrentPage()" class="px-4 py-1.5 bg-red-600 text-white rounded text-xs">삭제하기</button>
@@ -336,6 +361,18 @@
 
         const USER_KEY = "namu_friend_user_v2";
 
+        const DEFAULT_WIKI_DATA = {
+            "수면 권장냥": {
+                title: "수면 권장냥",
+                category: "일반",
+                author: "관리자",
+                updatedAt: "2026-10-31 10:00:00",
+                views: 1,
+                content: "== 개요 ==\n나무위키에 오신 것을 환영합니다! [* 주석 기능 지원] 🎉\n\n이곳은 누구나 자유롭게 문서를 수정하고 저장할 수 있는 공간입니다.\n\n> 바둑을 한마디로 정리하면 '''집'''이 더 많은 사람이 이기는 싸움이에요.\n> 그래서 끝에서부터 가운데로 자기 집을 잘 지으면서 남의 집을 부수면서 서서히 조여 들어와야 해요.\n\n=== 세부 정보 ===\n* 굵은 글씨는 '''이렇게''' 쓰세요.\n* 기울임은 ''이렇게'' 쓰세요.",
+                history: [{ version: 1, author: "관리자", date: "2026-10-31 10:00:00", summary: "초기 생성" }]
+            }
+        };
+
         let wikiData = {};
         let currentPage = "수면 권장냥";
         let currentUser = { name: "친구", avatar: "😀" };
@@ -347,12 +384,18 @@
                     fetchedData[docSnapshot.id] = docSnapshot.data();
                 });
 
-                if (Object.keys(fetchedData).length > 0) {
+                if (Object.keys(fetchedData).length === 0) {
+                    Object.keys(DEFAULT_WIKI_DATA).forEach(async (key) => {
+                        await setDoc(doc(db, "wiki_pages", key), DEFAULT_WIKI_DATA[key]);
+                    });
+                    wikiData = JSON.parse(JSON.stringify(DEFAULT_WIKI_DATA));
+                } else {
                     wikiData = fetchedData;
-                    renderRecentSidebar();
-                    if (document.getElementById('view-section').classList.contains('hidden') === false) {
-                        navigateTo(currentPage, false);
-                    }
+                }
+
+                renderRecentSidebar();
+                if (document.getElementById('view-section').classList.contains('hidden') === false) {
+                    navigateTo(currentPage, false);
                 }
             });
         }
@@ -439,15 +482,20 @@
             docObj.category = category;
             docObj.author = currentUser.name;
             docObj.updatedAt = dateStr;
+            
             if (!docObj.history) docObj.history = [];
-            docObj.history.unshift({ version: docObj.history.length + 1, author: currentUser.name, date: dateStr, summary });
+            docObj.history.unshift({ 
+                version: docObj.history.length + 1, 
+                author: currentUser.name, 
+                date: dateStr, 
+                summary 
+            });
 
             await savePageToFirebase(currentPage, docObj);
             showToast("클라우드에 안전하게 저장되었습니다!");
             window.navigateTo(currentPage, false);
         };
 
-        // 비밀번호 검증 후 삭제 실행
         window.confirmDeleteCurrentPage = async function() {
             const passwordInput = document.getElementById('delete-password-input').value;
             if (passwordInput !== "180213") {
@@ -462,21 +510,48 @@
             window.navigateTo("수면 권장냥");
         };
 
+        // 주석 및 어록/인용구가 완벽 지원되는 나무위키 파서
         function parseWikiMarkup(text) {
             if (!text) return { renderedHtml: "", toc: [] };
             let toc = [];
+            let footnotes = [];
             let headingCount = 0;
             let h2Count = 0;
             let h3Count = 0;
             let h4Count = 0;
 
-            let lines = text.split('\n');
+            // 1. 주석 파싱 ([* 내용])
+            let processedText = text.replace(/\[\*\s*(.*?)\]/g, (match, fnContent) => {
+                footnotes.push(fnContent);
+                let fnIndex = footnotes.length;
+                return `<a href="#fn-${fnIndex}" id="rfn-${fnIndex}" class="wiki-fn-link" title="${fnContent}">[${fnIndex}]</a>`;
+            });
+
+            let lines = processedText.split('\n');
             let parsedLines = [];
             let inTable = false;
             let tableRows = [];
+            let inQuote = false;
+            let quoteLines = [];
 
             for (let rawLine of lines) {
                 let line = rawLine.trim();
+
+                // 어록/인용구 처리 (> 로 시작하는 라인들 그룹화)
+                if (line.startsWith('>')) {
+                    let quoteContent = rawLine.replace(/^>\s?/, '');
+                    if (!inQuote) {
+                        inQuote = true;
+                        quoteLines = [quoteContent];
+                    } else {
+                        quoteLines.push(quoteContent);
+                    }
+                    continue;
+                } else if (inQuote) {
+                    parsedLines.push(`<blockquote>${quoteLines.map(l => `<p>${l}</p>`).join('')}</blockquote>`);
+                    inQuote = false;
+                    quoteLines = [];
+                }
 
                 if (line === '----') {
                     if (inTable) { parsedLines.push(renderTable(tableRows)); inTable = false; tableRows = []; }
@@ -538,7 +613,13 @@
 
                 parsedLines.push(rawLine ? `<p>${rawLine}</p>` : '<br>');
             }
-            if (inTable) parsedLines.push(renderTable(tableRows));
+
+            if (inQuote) {
+                parsedLines.push(`<blockquote>${quoteLines.map(l => `<p>${l}</p>`).join('')}</blockquote>`);
+            }
+            if (inTable) {
+                parsedLines.push(renderTable(tableRows));
+            }
 
             let html = parsedLines.join('');
             html = html.replace(/'''(.*?)'''/g, '<strong>$1</strong>');
@@ -561,6 +642,16 @@
                 let exists = !!wikiData[target];
                 return exists ? `<span onclick="navigateTo('${target}')" class="wiki-link">${label}</span>` : `<span onclick="navigateTo('${target}')" class="wiki-link-new">${label}<sup>?</sup></span>`;
             });
+
+            // 각주(주석) 목록 출력
+            if (footnotes.length > 0) {
+                html += '<div class="wiki-footnote-box"><div class="font-bold mb-1">각주</div><ol class="list-decimal pl-5 space-y-1">';
+                footnotes.forEach((fn, idx) => {
+                    let fnId = idx + 1;
+                    html += `<li id="fn-${fnId}"><span>${fn} <a href="#rfn-${fnId}" class="text-namu hover:underline">^</a></span></li>`;
+                });
+                html += '</ol></div>';
+            }
 
             return { renderedHtml: html, toc };
         }
@@ -656,7 +747,7 @@
 
         window.openDeleteModal = function() {
             document.getElementById('delete-doc-title-display').textContent = currentPage;
-            document.getElementById('delete-password-input').value = ''; // 창 열릴 때 입력란 초기화
+            document.getElementById('delete-password-input').value = ''; 
             document.getElementById('delete-page-modal').classList.remove('hidden');
         };
         window.closeDeleteModal = function() { document.getElementById('delete-page-modal').classList.add('hidden'); };
