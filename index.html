@@ -278,13 +278,15 @@
         </div>
     </div>
 
+    <!-- 비밀번호 입력 삭제 모달 -->
     <div id="delete-page-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
         <div class="bg-white rounded-lg shadow-xl max-w-sm w-full p-5">
-            <h3 class="text-lg font-bold text-red-600 mb-2">문서 삭제</h3>
-            <p class="text-xs text-gray-600 mb-4"><span id="delete-doc-title-display" class="font-bold"></span> 문서를 정말 삭제하시겠습니까?</p>
+            <h3 class="text-lg font-bold text-red-600 mb-2">문서 삭제 보안 인증</h3>
+            <p class="text-xs text-gray-600 mb-3"><span id="delete-doc-title-display" class="font-bold"></span> 문서를 삭제하려면 관리자 비밀번호를 입력하세요.</p>
+            <input type="password" id="delete-password-input" placeholder="비밀번호 입력" class="w-full p-2 border rounded text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-red-500" onkeydown="if(event.key==='Enter') confirmDeleteCurrentPage()">
             <div class="flex justify-end gap-2">
                 <button onclick="closeDeleteModal()" class="px-3 py-1.5 bg-gray-200 rounded text-xs">취소</button>
-                <button onclick="confirmDeleteCurrentPage()" class="px-4 py-1.5 bg-red-600 text-white rounded text-xs">삭제</button>
+                <button onclick="confirmDeleteCurrentPage()" class="px-4 py-1.5 bg-red-600 text-white rounded text-xs">삭제하기</button>
             </div>
         </div>
     </div>
@@ -305,7 +307,7 @@
         <span id="toast-message">알림</span>
     </div>
 
-    <!-- Firebase SDK Imports (Modular Script) -->
+    <!-- Firebase SDK Imports -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { 
@@ -334,18 +336,6 @@
 
         const USER_KEY = "namu_friend_user_v2";
 
-        const DEFAULT_WIKI_DATA = {
-            "수면 권장냥": {
-                title: "수면 권장냥",
-                category: "일반",
-                author: "관리자",
-                updatedAt: "2026-10-31 10:00:00",
-                views: 1,
-                content: "== 개요 ==\n나무위키에 오신 것을 환영합니다! 🎉\n\n이곳은 누구나 자유롭게 문서를 수정하고 저장할 수 있는 공간입니다.\n\n=== 세부 정보 ===\n* 굵은 글씨는 '''이렇게''' 쓰세요.\n* 기울임은 ''이렇게'' 쓰세요.\n\n== 문법 테스트 ==\n[[수면권장냥|수면권장냥 문서로 이동]]",
-                history: [{ version: 1, author: "관리자", date: "2026-10-31 10:00:00", summary: "초기 생성" }]
-            }
-        };
-
         let wikiData = {};
         let currentPage = "수면 권장냥";
         let currentUser = { name: "친구", avatar: "😀" };
@@ -357,18 +347,12 @@
                     fetchedData[docSnapshot.id] = docSnapshot.data();
                 });
 
-                if (Object.keys(fetchedData).length === 0) {
-                    Object.keys(DEFAULT_WIKI_DATA).forEach(async (key) => {
-                        await setDoc(doc(db, "wiki_pages", key), DEFAULT_WIKI_DATA[key]);
-                    });
-                    wikiData = JSON.parse(JSON.stringify(DEFAULT_WIKI_DATA));
-                } else {
+                if (Object.keys(fetchedData).length > 0) {
                     wikiData = fetchedData;
-                }
-
-                renderRecentSidebar();
-                if (document.getElementById('view-section').classList.contains('hidden') === false) {
-                    navigateTo(currentPage, false);
+                    renderRecentSidebar();
+                    if (document.getElementById('view-section').classList.contains('hidden') === false) {
+                        navigateTo(currentPage, false);
+                    }
                 }
             });
         }
@@ -419,7 +403,6 @@
             const tocList = document.getElementById('toc-list');
             if (parsed.toc && parsed.toc.length > 0) {
                 tocContainer.classList.remove('hidden');
-                // 목차 레벨별 확실한 들여쓰기 클래스 적용 (level 2는 pl-4, level 3은 pl-8)
                 tocList.innerHTML = parsed.toc.map(item => {
                     let paddingClass = item.level === 2 ? 'pl-4' : (item.level === 3 ? 'pl-8' : '');
                     return `<li class="${paddingClass}"><a href="#toc-${item.id}" class="text-namu hover:underline"><span class="font-bold">${item.number}.</span> ${item.text}</a></li>`;
@@ -464,7 +447,14 @@
             window.navigateTo(currentPage, false);
         };
 
+        // 비밀번호 검증 후 삭제 실행
         window.confirmDeleteCurrentPage = async function() {
+            const passwordInput = document.getElementById('delete-password-input').value;
+            if (passwordInput !== "180213") {
+                showToast("비밀번호가 틀렸습니다!");
+                return;
+            }
+
             await deletePageFromFirebase(currentPage);
             delete wikiData[currentPage];
             closeDeleteModal();
@@ -666,6 +656,7 @@
 
         window.openDeleteModal = function() {
             document.getElementById('delete-doc-title-display').textContent = currentPage;
+            document.getElementById('delete-password-input').value = ''; // 창 열릴 때 입력란 초기화
             document.getElementById('delete-page-modal').classList.remove('hidden');
         };
         window.closeDeleteModal = function() { document.getElementById('delete-page-modal').classList.add('hidden'); };
